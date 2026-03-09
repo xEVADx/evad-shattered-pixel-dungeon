@@ -1,0 +1,47 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "com.mobidevelop.robovm:robovm-gradle-plugin:$robovmVersion"
+    }
+}
+
+apply plugin: "java"
+apply plugin: "robovm"
+
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+java.sourceCompatibility = java.targetCompatibility = appJavaCompatibility
+
+task updateRoboVMProps(){
+    def props = new Properties()
+
+    props.setProperty('appName', appName)
+
+    // Use a unique bundle ID you control
+    props.setProperty('appApplePackageName', 'au.com.herrons.evadshatteredpixeldungeon')
+
+    props.setProperty('appVersionCode', appVersionCode.toString())
+    props.setProperty('appVersionName', appVersionName)
+    props.setProperty('appShortVersionName', (appVersionName =~ /\d+\.\d+\.\d+/)[0])
+
+    props.setProperty('appMainclass', appPackageName + ".ios.IOSLauncher")
+    props.setProperty('appExecutable', "IOSLauncher")
+
+    file("robovm.properties").withWriter {
+        props.store(it, "Dynamically generated, do not commit to version control!")
+    }
+}
+
+robovm {
+    iosSignIdentity = project.findProperty("iosSignIdentity")
+    iosProvisioningProfile = project.findProperty("iosProvisioningProfile")
+    iosSkipSigning = false
+}
+
+build.dependsOn updateRoboVMProps
+
+launchIPhoneSimulator.dependsOn build
+launchIPadSimulator.dependsOn build
+launchIOSDevice.dependsOn build
+createIPA.dependsOn build
